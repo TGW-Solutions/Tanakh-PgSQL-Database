@@ -1,16 +1,44 @@
 # Tanakh SQL Database (Pardes)
 
-Repository dedicated to distributing the **Tanakh** database in **SQL** format, used by the **Pardes** project.
+Repository dedicated to distributing the **Tanakh** database in **PostgreSQL SQL** format (`tanakh.sql`), used by the **Pardes** project.
 
 ---
 
 ## 📥 Download
 
-The complete `.sql` file is available for download in the **[Releases](https://github.com/TGW-Solutions/Pardes-Tanakh/releases)** section of this repository.
+The complete `tanakh.sql` file is available for download in the **[Releases](https://github.com/TGW-Solutions/Pardes-Tanakh/releases)** section of this repository.
 
 1. Go to the **Releases** tab on GitHub.
 2. Select the latest release.
-3. Download the `.sql` file attached under **Assets**.
+3. Download the `tanakh.sql` file attached under **Assets**.
+
+---
+
+## 🛠️ Compatibility & Restoration
+
+This dump is exported via `pg_dump` and is designed for **PostgreSQL 15+ / PostgreSQL 17** (including **Supabase** Cloud and self-hosted instances). It uses PostgreSQL-specific features (`CREATE TYPE ... AS ENUM`, `GENERATED ... AS IDENTITY`, `security_invoker = true` views, `pg_catalog.setval`, and Supabase `anon`/`authenticated`/`service_role` grants and RLS policies) and is not directly compatible with MySQL, SQLite, or SQL Server without manual conversion.
+
+### Restore into PostgreSQL / Supabase
+```bash
+psql "<POSTGRES_CONNECTION_STRING>" --single-transaction --variable ON_ERROR_STOP=1 -f tanakh.sql
+```
+
+> **Note for plain PostgreSQL (non-Supabase):** Ensure the roles `anon`, `authenticated`, and `service_role` exist before restoring, or strip the `OWNER TO`, `CREATE POLICY`, and `GRANT` statements if importing into a standalone database.
+
+---
+
+## 🗄️ Database Scope
+
+- **1 Custom Enum Type:** `public.vocabulary_item_type`
+- **28 Base Tables:**
+  - **Corpora & Verses:** `corpora`, `canonical_divisions`, `artifact_types`, `artifacts`, `artifact_section_types`, `artifact_sections`, `verses`, `verse_translations`, `verse_vocabulary`, `vocabulary`
+  - **Lexicon, Morphology & BDB:** `language_types`, `parts_of_speech`, `parts_of_speech_i18n`, `morph_tags`, `morph_tags_i18n`, `affixes`, `affixes_i18n`, `lemmas`, `lemmas_i18n`, `bdb_senses`, `bdb_senses_i18n`, `inflected_forms`, `inflected_form_affixes`, `vocabulary_lexical_links`, `bible_books`, `bible_books_i18n`, `lexicon_sample_verses`, `inflected_form_sample_verses`
+- **5 Views (`WITH (security_invoker = true)`):**
+  - `public.v_indexation_of_corpora` — Primary flattened Tanakh index (books, chapters, verses, Masoretic/consonantal words, gematric values, and multilingual verse translations).
+  - `public.v_vocabulary_lexicon` — Unified Hebrew lexicon lookup (Strong's, BDB, KJV usage, morphology). Filter by `WHERE language_id = <id>`.
+  - `public.v_inflected_forms_i18n` — Inflected Hebrew forms with localized morphological descriptions. Filter by `WHERE language_id = <id>`.
+  - `public.v_inflected_form_affixes_i18n` — Prefix/suffix breakdowns with localized meanings. Filter by `WHERE language_id = <id>`.
+  - `public.v_refine_vocabulary` — Internal QA view for Masoretic Unicode validation.
 
 ---
 
